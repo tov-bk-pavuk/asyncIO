@@ -1,32 +1,32 @@
-import aiohttp
 import asyncio
 
-url = [
-    'http://httpbin.org/get',
-    'http://httpbin.org/get',
-    'http://httpbin.org/get',
+import aiohttp
+
+urls = [
+    'https://api.monobank.ua/bank/currency?currencyCodeA=840',
+    'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json',
+    'https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5',
 ]
 
 
-def weather_one(session):
-    async with session.get(url[0]) as resp:  # менеджер контекста, который создаёт асинхронную сессию coroutine
-        text = await resp.json()
-        print(text)
-
-
-def weather_two(session):
-    pass
-
-
-def weather_three(session):
-    pass
+async def fetch(session, url):
+    async with session.get(url) as response:
+        return await response.json()
 
 
 async def main():
-    async with aiohttp.ClientSession() as session:  # менеджер контекста, который создаёт асинхронную сессию coroutine
-        weather_one(session)
-        weather_two(session)
-        weather_three(session)
+    async with aiohttp.ClientSession() as session:
+        html = await fetch(session, urls[0])
+        avg_mono = (html[0]['rateBuy'] + html[0]['rateSell']) / 2
+
+        html = await fetch(session, urls[1])
+        nac_bank = html[26]['rate']
+
+        html = await fetch(session, urls[2])
+        privat_bank = (float(html[0]['buy']) + float(html[0]['sale']))/2
+
+        print(f' средний курс USD/ГРН за 1 USD = {round((avg_mono + nac_bank + privat_bank)/3, 2)} грн')
 
 
-asyncio.run(main)
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
